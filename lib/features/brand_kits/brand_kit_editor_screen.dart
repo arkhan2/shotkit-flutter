@@ -52,8 +52,8 @@ class _BrandKitEditorScreenState extends ConsumerState<BrandKitEditorScreen> {
         }
         if (_name.text.isEmpty) _name.text = kit.kit.name;
         return Scaffold(
-          appBar: AppBar(
-            title: const Text('Brand Kit'),
+          appBar: ShotKitAppBar(
+            title: 'Brand Kit',
             actions: [
               IconButton(
                 onPressed: () async {

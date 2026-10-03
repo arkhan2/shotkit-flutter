@@ -111,14 +111,14 @@ class _ComposerReviewScreenState extends ConsumerState<ComposerReviewScreen> {
     }
     if (_error != null || _design == null || _pages.isEmpty) {
       return Scaffold(
-        appBar: AppBar(),
+        appBar: const ShotKitAppBar(),
         body: EmptyState(title: 'Cannot open design', message: _error ?? 'No pages.'),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_design!.name),
+      appBar: ShotKitAppBar(
+        title: _design!.name,
         actions: [
           Text(_saveStatus, style: Theme.of(context).textTheme.labelMedium),
           IconButton(

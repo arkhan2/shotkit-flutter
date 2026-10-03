@@ -35,8 +35,8 @@ class ProjectDetailScreen extends ConsumerWidget {
     final designs = ref.watch(projectDesignsProvider(projectId));
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(project.valueOrNull?.name ?? 'Project'),
+      appBar: ShotKitAppBar(
+        title: project.valueOrNull?.name ?? 'Project',
         actions: [
           IconButton(
             tooltip: 'Setup',

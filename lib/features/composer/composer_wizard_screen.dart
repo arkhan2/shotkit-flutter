@@ -45,7 +45,7 @@ class _ComposerWizardScreenState extends ConsumerState<ComposerWizardScreen> {
   Widget build(BuildContext context) {
     final presets = canvasPresetsFor(_platform);
     return Scaffold(
-      appBar: AppBar(title: const Text('New design')),
+      appBar: const ShotKitAppBar(title: 'New design'),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [

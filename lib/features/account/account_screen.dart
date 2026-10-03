@@ -22,7 +22,7 @@ class AccountScreen extends ConsumerWidget {
     final env = ref.watch(envProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Account')),
+      appBar: const ShotKitAppBar(title: 'Account'),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [

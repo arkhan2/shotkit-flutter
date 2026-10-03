@@ -57,7 +57,7 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('New project')),
+      appBar: const ShotKitAppBar(title: 'New project'),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [

@@ -24,7 +24,7 @@ class ProjectSetupScreen extends ConsumerWidget {
     final kits = ref.watch(brandKitsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Project setup')),
+      appBar: const ShotKitAppBar(title: 'Project setup'),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [

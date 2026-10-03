@@ -31,7 +31,7 @@ class _DesignPreviewScreenState extends ConsumerState<DesignPreviewScreen> {
         }
         if (snapshot.hasError || snapshot.data == null) {
           return Scaffold(
-            appBar: AppBar(),
+            appBar: const ShotKitAppBar(),
             body: EmptyState(
               title: 'Preview unavailable',
               message: snapshot.error?.toString() ?? 'Design not found.',
@@ -43,8 +43,8 @@ class _DesignPreviewScreenState extends ConsumerState<DesignPreviewScreen> {
         final urls = snapshot.data!.$3;
         final page = pages[_index.clamp(0, pages.length - 1)];
         return Scaffold(
-          appBar: AppBar(
-            title: Text(design.name),
+          appBar: ShotKitAppBar(
+            title: design.name,
             actions: [
               IconButton(
                 tooltip: 'Edit',

@@ -55,6 +55,78 @@ class _MarkFrame extends StatelessWidget {
   }
 }
 
+/// Mark + product name, matching the web top-bar lockup.
+class BrandLockup extends StatelessWidget {
+  const BrandLockup({super.key, this.pageTitle, this.markSize = 28});
+
+  final String? pageTitle;
+  final double markSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final page = pageTitle?.trim();
+    final showPage =
+        page != null && page.isNotEmpty && page != AppBrand.name;
+    return Row(
+      children: [
+        BrandMark(size: markSize),
+        const SizedBox(width: 10),
+        Flexible(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                AppBrand.name.toUpperCase(),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      letterSpacing: 1.6,
+                      fontWeight: FontWeight.w700,
+                      color: AppBrand.slate,
+                    ),
+              ),
+              if (showPage)
+                Text(
+                  page,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class ShotKitAppBar extends StatelessWidget implements PreferredSizeWidget {
+  const ShotKitAppBar({
+    super.key,
+    this.title,
+    this.actions,
+    this.automaticallyImplyLeading = true,
+  });
+
+  final String? title;
+  final List<Widget>? actions;
+  final bool automaticallyImplyLeading;
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBar(
+      automaticallyImplyLeading: automaticallyImplyLeading,
+      titleSpacing: 16,
+      title: BrandLockup(pageTitle: title),
+      actions: actions,
+    );
+  }
+}
+
 class EmptyState extends StatelessWidget {
   const EmptyState({
     super.key,

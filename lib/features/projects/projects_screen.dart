@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/providers.dart';
-import '../../domain/brand.dart';
 import '../../domain/models.dart';
 import '../../shared/widgets.dart';
 
@@ -19,8 +18,7 @@ class ProjectsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final projects = ref.watch(projectsProvider);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(AppBrand.name),
+      appBar: ShotKitAppBar(
         actions: [
           IconButton(
             onPressed: () => context.push('/app/projects/new'),

@@ -19,8 +19,8 @@ class BrandKitsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final kits = ref.watch(brandKitsProvider);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Brand Kits'),
+      appBar: ShotKitAppBar(
+        title: 'Brand Kits',
         actions: [
           IconButton(
             onPressed: () => context.push('/app/brand-kits/new'),
@@ -104,7 +104,7 @@ class _NewBrandKitScreenState extends ConsumerState<NewBrandKitScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('New Brand Kit')),
+      appBar: const ShotKitAppBar(title: 'New Brand Kit'),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
