@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none" role="img" aria-label="ShotKit">
+  <defs>
+    <linearGradient id="stage" x1="20" y1="8" x2="110" y2="120" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#102536"/>
+      <stop offset="0.55" stop-color="#0B1520"/>
+      <stop offset="1" stop-color="#071018"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="78" cy="58" r="52" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38BDF8" stop-opacity="0.45"/>
+      <stop offset="0.55" stop-color="#38BDF8" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#38BDF8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="skyCard" x1="54" y1="24" x2="108" y2="104" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7DD3FC"/>
+      <stop offset="0.45" stop-color="#38BDF8"/>
+      <stop offset="1" stop-color="#0EA5E9"/>
+    </linearGradient>
+    <linearGradient id="inkCard" x1="22" y1="28" x2="70" y2="100" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1F2933"/>
+      <stop offset="1" stop-color="#0A0A0A"/>
+    </linearGradient>
+    <linearGradient id="screenSheen" x1="60" y1="36" x2="100" y2="96" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.28"/>
+      <stop offset="0.35" stop-color="#FFFFFF" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-10%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+
+  <!-- Full-bleed stage (no light ring) -->
+  <rect width="128" height="128" fill="url(#stage)"/>
+  <circle cx="78" cy="56" r="54" fill="url(#glow)"/>
+
+  <!-- Back frame (ink) -->
+  <g filter="url(#softShadow)">
+    <rect x="22" y="26" width="52" height="76" rx="14" fill="url(#inkCard)" stroke="#5A7388" stroke-width="2.25"/>
+    <!-- Fake UI lines on back screen -->
+    <rect x="30" y="40" width="28" height="4" rx="2" fill="#5A7388" opacity="0.55"/>
+    <rect x="30" y="50" width="36" height="4" rx="2" fill="#5A7388" opacity="0.35"/>
+    <rect x="30" y="60" width="22" height="4" rx="2" fill="#5A7388" opacity="0.25"/>
+  </g>
+
+  <!-- Front frame (sky) -->
+  <g filter="url(#softShadow)">
+    <rect x="54" y="26" width="52" height="76" rx="14" fill="url(#skyCard)" stroke="#7DD3FC" stroke-width="2.25"/>
+    <rect x="54" y="26" width="52" height="76" rx="14" fill="url(#screenSheen)"/>
+    <!-- Status / notch hint -->
+    <rect x="70" y="34" width="20" height="5" rx="2.5" fill="#0B1520" opacity="0.22"/>
+    <!-- Content blocks suggesting a screenshot -->
+    <rect x="64" y="48" width="32" height="8" rx="3" fill="#F0F9FF" opacity="0.55"/>
+    <rect x="64" y="62" width="24" height="5" rx="2.5" fill="#F0F9FF" opacity="0.35"/>
+    <rect x="64" y="74" width="28" height="18" rx="5" fill="#0B1520" opacity="0.18"/>
+  </g>
+</svg>
