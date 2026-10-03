@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -63,15 +62,15 @@ class ScreenRepository {
     return result;
   }
 
-  Future<Result<AppScreen>> uploadScreen({
+  Future<Result<AppScreen>> uploadScreenBytes({
     required String projectId,
-    required File file,
+    required Uint8List bytes,
+    required String fileName,
     String? name,
   }) async {
     final assetId = _uuid.v4();
-    final fileName = _safeName(p.basename(file.path));
+    fileName = _safeName(fileName);
     final mime = _mimeFor(fileName);
-    final bytes = await file.readAsBytes();
     final size = await _decodeSize(bytes);
     final path = projectScreenshotPath(
       userId: _uid,

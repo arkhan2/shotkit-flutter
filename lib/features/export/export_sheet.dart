@@ -142,8 +142,14 @@ class _ExportSheetState extends ConsumerState<ExportSheet> {
           title: const Text('Export anyway?'),
           content: const Text('This set has compliance errors.'),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-            TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Export')),
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Export'),
+            ),
           ],
         ),
       );
@@ -173,16 +179,14 @@ class _ExportSheetState extends ConsumerState<ExportSheet> {
       return;
     }
 
+    var shouldRelease = true;
     try {
       setState(() => _status = 'Rendering…');
       final pages = _scope == 'current'
           ? [widget.pages[widget.currentIndex.clamp(0, widget.pages.length - 1)]]
           : widget.pages;
       final service = ExportService();
-      if (!mounted) {
-        await billing.releaseExport();
-        return;
-      }
+      if (!mounted) return;
       final result = await service.exportDesign(
         context: context,
         design: widget.design,
@@ -193,32 +197,30 @@ class _ExportSheetState extends ConsumerState<ExportSheet> {
         watermark: shouldApplyExportWatermark(snapshot),
       );
       if (result.isErr) {
-        await billing.releaseExport();
-        setState(() {
-          _busy = false;
-          _status = result.errorOrNull;
-        });
+        setState(() => _status = result.errorOrNull);
         return;
       }
       final files = result.dataOrNull!;
       if (savePhotos) {
         for (final file in files) {
-          if (!file.path.endsWith('.zip')) {
-            await service.saveToPhotos(file);
+          final saved = await service.saveToPhotos(file);
+          if (saved.isErr) {
+            setState(() => _status = saved.errorOrNull);
+            return;
           }
-        }
-        if (files.any((f) => f.path.endsWith('.zip'))) {
-          await service.shareFiles(files);
         }
         setState(() => _status = 'Saved.');
       } else {
-        await service.shareFiles(files);
+        await service.shareArtifacts(files);
         setState(() => _status = 'Shared.');
       }
+      shouldRelease = false;
     } catch (e) {
-      await billing.releaseExport();
       setState(() => _status = e.toString());
     } finally {
+      if (shouldRelease) {
+        await billing.releaseExport();
+      }
       if (mounted) setState(() => _busy = false);
     }
   }

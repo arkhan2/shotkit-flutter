@@ -20,11 +20,35 @@ class DesignPreviewScreen extends ConsumerStatefulWidget {
 
 class _DesignPreviewScreenState extends ConsumerState<DesignPreviewScreen> {
   int _index = 0;
+  late final PageController _pageController;
+  late final Future<(Design, List<DesignPage>, Map<String, String?>)?> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+    _future = _load();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _goTo(int index, int pageCount) async {
+    if (index < 0 || index >= pageCount) return;
+    await _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<(Design, List<DesignPage>, Map<String, String?>)?>(
-      future: _load(),
+      future: _future,
       builder: (context, snapshot) {
         if (!snapshot.hasData && !snapshot.hasError) {
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -41,7 +65,6 @@ class _DesignPreviewScreenState extends ConsumerState<DesignPreviewScreen> {
         final design = snapshot.data!.$1;
         final pages = snapshot.data!.$2;
         final urls = snapshot.data!.$3;
-        final page = pages[_index.clamp(0, pages.length - 1)];
         return Scaffold(
           appBar: ShotKitAppBar(
             title: design.name,
@@ -73,11 +96,21 @@ class _DesignPreviewScreenState extends ConsumerState<DesignPreviewScreen> {
                 ),
               ),
               Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Center(
-                    child: FittedDesignPage(document: page.document, assetUrls: urls),
-                  ),
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: pages.length,
+                  onPageChanged: (index) => setState(() => _index = index),
+                  itemBuilder: (context, index) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Center(
+                        child: FittedDesignPage(
+                          document: pages[index].document,
+                          assetUrls: urls,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
               SizedBox(
@@ -86,12 +119,14 @@ class _DesignPreviewScreenState extends ConsumerState<DesignPreviewScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     IconButton(
-                      onPressed: _index == 0 ? null : () => setState(() => _index--),
+                      onPressed: _index == 0 ? null : () => _goTo(_index - 1, pages.length),
                       icon: const Icon(Icons.chevron_left),
                     ),
                     Text('${_index + 1} / ${pages.length}'),
                     IconButton(
-                      onPressed: _index >= pages.length - 1 ? null : () => setState(() => _index++),
+                      onPressed: _index >= pages.length - 1
+                          ? null
+                          : () => _goTo(_index + 1, pages.length),
                       icon: const Icon(Icons.chevron_right),
                     ),
                   ],

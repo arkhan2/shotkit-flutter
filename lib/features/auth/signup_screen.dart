@@ -6,6 +6,8 @@ import '../../core/validators.dart';
 import '../../data/providers.dart';
 import '../../domain/brand.dart';
 import '../../shared/widgets.dart';
+import '../legal/legal_screen.dart';
+import 'google_continue_button.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -107,11 +109,19 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               onPressed: _busy ? null : _submit,
               child: Text(_busy ? 'Creating…' : 'Create account'),
             ),
+            const SizedBox(height: 12),
+            GoogleContinueButton(
+              busy: _busy,
+              onSignedIn: () => context.go('/app'),
+              onError: (message) => setState(() => _error = message),
+            ),
             const SizedBox(height: 24),
             TextButton(
               onPressed: () => context.go('/login'),
               child: const Text('Already have an account? Sign in'),
             ),
+            const SizedBox(height: 8),
+            const LegalLinks(),
           ],
         ),
       ),

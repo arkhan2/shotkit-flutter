@@ -140,6 +140,18 @@ class AppScreen {
   final int sortOrder;
   final String? previewUrl;
   final AssetRecord? asset;
+
+  AppScreen copyWith({String? name, int? sortOrder}) {
+    return AppScreen(
+      id: id,
+      projectId: projectId,
+      assetId: assetId,
+      name: name ?? this.name,
+      sortOrder: sortOrder ?? this.sortOrder,
+      previewUrl: previewUrl,
+      asset: asset,
+    );
+  }
 }
 
 class Design {

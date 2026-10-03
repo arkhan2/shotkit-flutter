@@ -6,6 +6,7 @@ import '../../data/providers.dart';
 import '../../domain/brand.dart';
 import '../../domain/entitlements.dart';
 import '../../shared/widgets.dart';
+import '../legal/legal_screen.dart';
 
 final entitlementsProvider = FutureProvider<EntitlementSnapshot>((ref) {
   ref.watch(currentUserProvider);
@@ -63,8 +64,19 @@ class AccountScreen extends ConsumerWidget {
                     Uri.parse(env.billingUrl),
                     mode: LaunchMode.externalApplication,
                   ),
-                  child: const Text('Manage on web'),
+                  child: Text(
+                    env.isLocalWebUrl
+                        ? 'Open local studio'
+                        : 'Manage on web',
+                  ),
                 ),
+                if (env.isLocalWebUrl) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'SHOTKIT_WEB_URL is still localhost. Set the production ShotKit web URL when the studio is deployed.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
               ],
             ),
           ),
@@ -73,7 +85,9 @@ class AccountScreen extends ConsumerWidget {
             onPressed: () => ref.read(authRepositoryProvider).signOut(),
             child: const Text('Sign out'),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
+          const LegalLinks(),
+          const SizedBox(height: 16),
           Text(
             '${AppBrand.name} companion · same account as the web studio',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppBrand.slate),

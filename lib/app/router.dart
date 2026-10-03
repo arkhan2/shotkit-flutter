@@ -6,6 +6,7 @@ import '../data/providers.dart';
 import '../features/account/account_screen.dart';
 import '../features/auth/login_screen.dart';
 import '../features/auth/signup_screen.dart';
+import '../features/legal/legal_screen.dart';
 import '../features/brand_kits/brand_kit_editor_screen.dart';
 import '../features/brand_kits/brand_kits_screen.dart';
 import '../features/composer/composer_review_screen.dart';
@@ -29,17 +30,29 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: refresh,
     redirect: (context, state) {
       final session = ref.read(supabaseProvider).auth.currentSession;
-      final loggingIn = state.matchedLocation == '/login' ||
-          state.matchedLocation == '/signup';
+      final public = state.matchedLocation == '/login' ||
+          state.matchedLocation == '/signup' ||
+          state.matchedLocation.startsWith('/legal');
       if (session == null) {
-        return loggingIn ? null : '/login';
+        return public ? null : '/login';
       }
-      if (loggingIn) return '/app';
+      if (state.matchedLocation == '/login' ||
+          state.matchedLocation == '/signup') {
+        return '/app';
+      }
       return null;
     },
     routes: [
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(path: '/signup', builder: (_, __) => const SignupScreen()),
+      GoRoute(
+        path: '/legal/privacy',
+        builder: (_, __) => const LegalScreen(document: LegalDocument.privacy),
+      ),
+      GoRoute(
+        path: '/legal/terms',
+        builder: (_, __) => const LegalScreen(document: LegalDocument.terms),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return AppShell(navigationShell: navigationShell);

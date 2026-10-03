@@ -48,6 +48,11 @@ app.*.map.json
 .env
 .env.local
 
+# Android upload signing — never commit the real keystore
+android/key.properties
+*.jks
+*.keystore
+
 # Flutter generated plugin files
 .flutter-plugins
 *.iml

@@ -1,0 +1,4 @@
+storePassword=
+keyPassword=
+keyAlias=shotkit
+storeFile=../upload-keystore.jks

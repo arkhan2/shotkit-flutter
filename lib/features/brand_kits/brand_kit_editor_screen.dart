@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -162,7 +160,8 @@ class _BrandKitEditorScreenState extends ConsumerState<BrandKitEditorScreen> {
     });
     final result = await ref.read(brandKitRepositoryProvider).uploadLogo(
           brandKitId: widget.kitId,
-          file: File(file.path),
+          bytes: await file.readAsBytes(),
+          fileName: file.name,
           variant: variant,
         );
     if (!mounted) return;

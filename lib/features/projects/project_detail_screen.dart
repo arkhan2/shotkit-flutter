@@ -1,16 +1,13 @@
-import 'dart:io';
-
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../data/providers.dart';
 import '../../domain/models.dart';
 import '../../domain/platforms.dart';
 import '../../shared/widgets.dart';
 import 'projects_screen.dart';
+import 'screen_library.dart';
 
 final projectProvider = FutureProvider.family<Project?, String>((ref, id) {
   return ref.watch(projectRepositoryProvider).getProject(id);
@@ -87,54 +84,22 @@ class ProjectDetailScreen extends ConsumerWidget {
             children: [
               const Expanded(child: SectionLabel('App screens')),
               TextButton.icon(
-                onPressed: () => _addScreens(context, ref),
+                onPressed: () => pickAndUploadScreens(ref, projectId: projectId),
                 icon: const Icon(Icons.add),
                 label: const Text('Add'),
               ),
             ],
           ),
+          const SizedBox(height: 4),
+          Text(
+            'Tap a screen to rename. Reorder in Setup.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
           const SizedBox(height: 8),
           screens.when(
             loading: () => const LinearProgressIndicator(),
             error: (e, _) => ErrorBanner(e.toString()),
-            data: (items) {
-              if (items.isEmpty) {
-                return const Text('No screens yet. Add captures from camera or gallery.');
-              }
-              return SizedBox(
-                height: 140,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: items.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 10),
-                  itemBuilder: (context, index) {
-                    final screen = items[index];
-                    return SizedBox(
-                      width: 76,
-                      child: Column(
-                        children: [
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: screen.previewUrl == null
-                                  ? const ColoredBox(color: Color(0x11000000))
-                                  : CachedNetworkImage(imageUrl: screen.previewUrl!, fit: BoxFit.cover),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            screen.name ?? 'Screen',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.labelSmall,
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
+            data: (items) => ScreenStrip(projectId: projectId, screens: items),
           ),
           const SizedBox(height: 28),
           Row(
@@ -180,15 +145,4 @@ class ProjectDetailScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _addScreens(BuildContext context, WidgetRef ref) async {
-    final picker = ImagePicker();
-    final files = await picker.pickMultiImage(imageQuality: 95);
-    if (files.isEmpty) return;
-    final repo = ref.read(screenRepositoryProvider);
-    for (final file in files) {
-      await repo.uploadScreen(projectId: projectId, file: File(file.path));
-    }
-    ref.invalidate(projectScreensProvider(projectId));
-    ref.invalidate(projectsProvider);
-  }
 }

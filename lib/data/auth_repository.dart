@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -13,6 +14,13 @@ class AuthRepository {
 
   User? get currentUser => _client.auth.currentUser;
   Session? get session => _client.auth.currentSession;
+
+  String get oauthRedirect {
+    if (kIsWeb) {
+      return Uri.base.origin;
+    }
+    return AppBrand.authRedirect;
+  }
 
   Future<Result<AuthResponse>> signInWithEmail({
     required String email,
@@ -66,31 +74,55 @@ class AuthRepository {
 
   Future<Result<void>> signInWithGoogle() async {
     try {
-      if (_env.hasGoogle) {
-        final google = GoogleSignIn(
-          serverClientId: _env.googleWebClientId,
-          clientId:
-              _env.googleIosClientId.isEmpty ? null : _env.googleIosClientId,
-          scopes: const ['email', 'profile'],
+      if (kIsWeb) {
+        return const Err(
+          'On the web, use the Google button. It signs in with an ID token.',
         );
-        final account = await google.signIn();
-        if (account == null) return const Err('Google sign-in was cancelled.');
-        final auth = await account.authentication;
-        final idToken = auth.idToken;
-        if (idToken == null) {
-          return const Err('Google did not return an ID token.');
-        }
-        await _client.auth.signInWithIdToken(
-          provider: OAuthProvider.google,
-          idToken: idToken,
-          accessToken: auth.accessToken,
-        );
-        return const Ok(null);
       }
 
-      await _client.auth.signInWithOAuth(
-        OAuthProvider.google,
-        redirectTo: AppBrand.authRedirect,
+      if (!_env.hasGoogle) {
+        return const Err(
+          'Google Sign-In is not configured. Add GOOGLE_WEB_CLIENT_ID '
+          '(the Web client ID from the Supabase Google provider) to '
+          'assets/config/app.env.',
+        );
+      }
+
+      final google = GoogleSignIn(
+        clientId:
+            _env.googleIosClientId.isEmpty ? null : _env.googleIosClientId,
+        serverClientId: _env.googleWebClientId,
+        scopes: const ['email', 'profile'],
+      );
+      final account = await google.signIn();
+      if (account == null) return const Err('Google sign-in was cancelled.');
+      final auth = await account.authentication;
+      final idToken = auth.idToken;
+      if (idToken == null) {
+        return const Err('Google did not return an ID token.');
+      }
+      await _client.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: idToken,
+        accessToken: auth.accessToken,
+      );
+      return const Ok(null);
+    } on AuthException catch (e) {
+      return Err(e.message);
+    } catch (e) {
+      return Err(e.toString());
+    }
+  }
+
+  Future<Result<void>> signInWithGoogleIdToken({
+    required String idToken,
+    String? nonce,
+  }) async {
+    try {
+      await _client.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: idToken,
+        nonce: nonce,
       );
       return const Ok(null);
     } on AuthException catch (e) {

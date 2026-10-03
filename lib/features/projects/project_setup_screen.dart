@@ -1,17 +1,13 @@
-import 'dart:io';
-
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../data/providers.dart';
-import '../../domain/models.dart';
 import '../../shared/widgets.dart';
 import '../brand_kits/brand_kits_screen.dart';
 import 'project_detail_screen.dart';
 import 'projects_screen.dart';
+import 'screen_library.dart';
 
 class ProjectSetupScreen extends ConsumerWidget {
   const ProjectSetupScreen({super.key, required this.projectId});
@@ -35,29 +31,12 @@ class ProjectSetupScreen extends ConsumerWidget {
           screens.when(
             loading: () => const LinearProgressIndicator(),
             error: (e, _) => ErrorBanner(e.toString()),
-            data: (items) => Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            data: (items) => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                for (final screen in items)
-                  _ScreenTile(
-                    screen: screen,
-                    onDelete: () async {
-                      await ref.read(screenRepositoryProvider).deleteScreen(screen);
-                      ref.invalidate(projectScreensProvider(projectId));
-                      ref.invalidate(projectsProvider);
-                    },
-                  ),
-                ActionChip(
-                  avatar: const Icon(Icons.photo_library_outlined, size: 18),
-                  label: const Text('Gallery'),
-                  onPressed: () => _pick(ref, ImageSource.gallery),
-                ),
-                ActionChip(
-                  avatar: const Icon(Icons.photo_camera_outlined, size: 18),
-                  label: const Text('Camera'),
-                  onPressed: () => _pick(ref, ImageSource.camera),
-                ),
+                ScreenReorderList(projectId: projectId, screens: items),
+                const SizedBox(height: 8),
+                ScreenAddButtons(projectId: projectId),
               ],
             ),
           ),
@@ -116,60 +95,4 @@ class ProjectSetupScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _pick(WidgetRef ref, ImageSource source) async {
-    final picker = ImagePicker();
-    if (source == ImageSource.gallery) {
-      final files = await picker.pickMultiImage(imageQuality: 95);
-      for (final file in files) {
-        await ref.read(screenRepositoryProvider).uploadScreen(
-              projectId: projectId,
-              file: File(file.path),
-            );
-      }
-    } else {
-      final file = await picker.pickImage(source: source, imageQuality: 95);
-      if (file == null) return;
-      await ref.read(screenRepositoryProvider).uploadScreen(
-            projectId: projectId,
-            file: File(file.path),
-          );
-    }
-    ref.invalidate(projectScreensProvider(projectId));
-    ref.invalidate(projectsProvider);
-  }
-}
-
-class _ScreenTile extends StatelessWidget {
-  const _ScreenTile({required this.screen, required this.onDelete});
-  final AppScreen screen;
-  final VoidCallback onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 72,
-      child: Stack(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: AspectRatio(
-              aspectRatio: 9 / 19.5,
-              child: screen.previewUrl == null
-                  ? const ColoredBox(color: Color(0x11000000))
-                  : CachedNetworkImage(imageUrl: screen.previewUrl!, fit: BoxFit.cover),
-            ),
-          ),
-          Positioned(
-            right: 0,
-            top: 0,
-            child: IconButton(
-              visualDensity: VisualDensity.compact,
-              onPressed: onDelete,
-              icon: const Icon(Icons.close, size: 16),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

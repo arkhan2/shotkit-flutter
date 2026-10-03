@@ -442,6 +442,8 @@ class TextElement extends DesignElement {
     String? content,
     String? color,
     String? align,
+    int? fontWeight,
+    TextEffects? effects,
     ElementTransform? transform,
   }) {
     return TextElement(
@@ -455,13 +457,13 @@ class TextElement extends DesignElement {
       content: content ?? this.content,
       fontFamily: fontFamily,
       fontSize: fontSize,
-      fontWeight: fontWeight,
+      fontWeight: fontWeight ?? this.fontWeight,
       fontStyle: fontStyle,
       lineHeight: lineHeight,
       letterSpacing: letterSpacing,
       color: color ?? this.color,
       align: align ?? this.align,
-      effects: effects,
+      effects: effects ?? this.effects,
     );
   }
 

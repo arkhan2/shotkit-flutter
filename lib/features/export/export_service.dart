@@ -1,13 +1,11 @@
-import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:archive/archive.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:gal/gal.dart';
 import 'package:image/image.dart' as img;
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/result.dart';
@@ -15,9 +13,22 @@ import '../../domain/compliance.dart';
 import '../../domain/document.dart';
 import '../../domain/models.dart';
 import '../../shared/renderer/design_page_view.dart';
+import '../../shared/renderer/render_ready.dart';
+
+class ExportArtifact {
+  const ExportArtifact({
+    required this.bytes,
+    required this.fileName,
+    required this.mimeType,
+  });
+
+  final Uint8List bytes;
+  final String fileName;
+  final String mimeType;
+}
 
 class ExportService {
-  Future<Result<File>> rasterizePage({
+  Future<Result<ExportArtifact>> rasterizePage({
     required BuildContext context,
     required DesignDocument document,
     required Map<String, String?> assetUrls,
@@ -26,6 +37,14 @@ class ExportService {
     bool watermark = false,
     int jpegQuality = 92,
   }) async {
+    if (!context.mounted) return const Err('Export cancelled.');
+    await waitForRendererAssets(
+      context,
+      assetUrls,
+      fontFamilies: fontFamiliesInDocument(document),
+    );
+    if (!context.mounted) return const Err('Export cancelled.');
+
     final key = GlobalKey();
     final overlay = Overlay.of(context, rootOverlay: true);
     late OverlayEntry entry;
@@ -47,12 +66,23 @@ class ExportService {
       ),
     );
     overlay.insert(entry);
-    await Future<void>.delayed(const Duration(milliseconds: 80));
+    await WidgetsBinding.instance.endOfFrame;
+    await Future<void>.delayed(const Duration(milliseconds: 120));
+    if (!context.mounted) {
+      entry.remove();
+      return const Err('Export cancelled.');
+    }
+    await waitForRendererAssets(
+      context,
+      assetUrls,
+      fontFamilies: fontFamiliesInDocument(document),
+    );
     await WidgetsBinding.instance.endOfFrame;
     await Future<void>.delayed(const Duration(milliseconds: 200));
 
     try {
-      final boundary = key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      final boundary =
+          key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
       if (boundary == null) {
         return const Err('Could not render the page.');
       }
@@ -62,16 +92,17 @@ class ExportService {
       if (bytes == null) return const Err('Failed to encode the page.');
 
       var data = bytes.buffer.asUint8List();
+      var mime = 'image/png';
       if (format == 'jpeg') {
         final decoded = img.decodePng(data);
         if (decoded == null) return const Err('Failed to encode JPEG.');
         data = img.encodeJpg(decoded, quality: jpegQuality);
+        mime = 'image/jpeg';
       }
 
-      final dir = await getTemporaryDirectory();
-      final file = File(p.join(dir.path, fileName));
-      await file.writeAsBytes(data, flush: true);
-      return Ok(file);
+      return Ok(
+        ExportArtifact(bytes: data, fileName: fileName, mimeType: mime),
+      );
     } catch (e) {
       return Err(e.toString());
     } finally {
@@ -79,40 +110,71 @@ class ExportService {
     }
   }
 
-  Future<Result<File>> zipFiles(List<File> files, String zipName) async {
+  Future<Result<ExportArtifact>> zipArtifacts(
+    List<ExportArtifact> artifacts,
+    String zipName,
+  ) async {
     try {
       final archive = Archive();
-      for (final file in files) {
+      for (final artifact in artifacts) {
         archive.addFile(
-          ArchiveFile(p.basename(file.path), file.lengthSync(), file.readAsBytesSync()),
+          ArchiveFile(artifact.fileName, artifact.bytes.length, artifact.bytes),
         );
       }
-      final bytes = ZipEncoder().encode(archive);
-      final dir = await getTemporaryDirectory();
-      final out = File(p.join(dir.path, zipName));
-      await out.writeAsBytes(bytes, flush: true);
-      return Ok(out);
+      final encoded = ZipEncoder().encode(archive);
+      return Ok(
+        ExportArtifact(
+          bytes: Uint8List.fromList(encoded),
+          fileName: zipName,
+          mimeType: 'application/zip',
+        ),
+      );
     } catch (e) {
       return Err(e.toString());
     }
   }
 
-  Future<Result<void>> saveToPhotos(File file) async {
+  Future<Result<void>> saveToPhotos(ExportArtifact artifact) async {
+    if (artifact.mimeType == 'application/zip') {
+      await shareArtifacts([artifact]);
+      return const Ok(null);
+    }
+    if (kIsWeb) {
+      await shareArtifacts([artifact]);
+      return const Ok(null);
+    }
     try {
-      await Gal.putImage(file.path);
+      final hasAccess = await Gal.hasAccess();
+      if (!hasAccess) {
+        final granted = await Gal.requestAccess();
+        if (!granted) {
+          return const Err('Photo library permission is required to save exports.');
+        }
+      }
+      await Gal.putImageBytes(artifact.bytes, name: artifact.fileName);
       return const Ok(null);
     } catch (e) {
       return Err(e.toString());
     }
   }
 
-  Future<void> shareFiles(List<File> files) async {
+  Future<void> shareArtifacts(List<ExportArtifact> artifacts) async {
     await SharePlus.instance.share(
-      ShareParams(files: files.map((f) => XFile(f.path)).toList()),
+      ShareParams(
+        files: artifacts
+            .map(
+              (artifact) => XFile.fromData(
+                artifact.bytes,
+                name: artifact.fileName,
+                mimeType: artifact.mimeType,
+              ),
+            )
+            .toList(),
+      ),
     );
   }
 
-  Future<Result<List<File>>> exportDesign({
+  Future<Result<List<ExportArtifact>>> exportDesign({
     required BuildContext context,
     required Design design,
     required List<DesignPage> pages,
@@ -122,10 +184,8 @@ class ExportService {
     required bool watermark,
     int jpegQuality = 92,
   }) async {
-    final targets = scope == 'current' && pages.isNotEmpty
-        ? [pages.first]
-        : pages;
-    final files = <File>[];
+    final targets = scope == 'current' && pages.isNotEmpty ? [pages.first] : pages;
+    final artifacts = <ExportArtifact>[];
     for (final page in targets) {
       final name = buildPageFilename(
         sortIndex: page.sortOrder,
@@ -141,18 +201,18 @@ class ExportService {
         watermark: watermark,
         jpegQuality: jpegQuality,
       );
-      if (result is Err<File>) return Err(result.message);
-      files.add((result as Ok<File>).data);
+      if (result is Err<ExportArtifact>) return Err(result.message);
+      artifacts.add((result as Ok<ExportArtifact>).data);
     }
 
     if (scope == 'zip') {
-      final zip = await zipFiles(
-        files,
+      final zip = await zipArtifacts(
+        artifacts,
         buildZipFilename(designName: design.name, platform: design.platform),
       );
-      if (zip is Err<File>) return Err(zip.message);
+      if (zip is Err<ExportArtifact>) return Err(zip.message);
       return Ok([zip.dataOrNull!]);
     }
-    return Ok(files);
+    return Ok(artifacts);
   }
 }

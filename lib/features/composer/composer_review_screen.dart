@@ -8,6 +8,7 @@ import '../../domain/generate.dart';
 import '../../domain/layouts.dart';
 import '../../domain/mockups.dart';
 import '../../domain/models.dart';
+import '../../domain/text_effects.dart';
 import '../../shared/renderer/design_page_view.dart';
 import '../../shared/widgets.dart';
 import '../export/export_sheet.dart';
@@ -177,6 +178,7 @@ class _ComposerReviewScreenState extends ConsumerState<ComposerReviewScreen> {
                 runSpacing: 8,
                 children: [
                   _Chip('Text', Icons.title, _editText),
+                  _Chip('Style', Icons.auto_awesome, _editStyle),
                   _Chip('Layout', Icons.dashboard_customize_outlined, _editLayout),
                   _Chip('Background', Icons.gradient, _editBackground),
                   _Chip('Brand', Icons.palette_outlined, _editBrand),
@@ -230,6 +232,57 @@ class _ComposerReviewScreenState extends ConsumerState<ComposerReviewScreen> {
         ),
       );
     }
+  }
+
+  Future<void> _editStyle() async {
+    final heading = _page.document.elements.whereType<TextElement>().cast<TextElement?>().firstWhere(
+          (t) => t!.role == 'heading' || t.name == 'Headline',
+          orElse: () => _page.document.elements.whereType<TextElement>().firstOrNull,
+        );
+    if (heading == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Add a headline before applying a style.')),
+      );
+      return;
+    }
+    final selectedId = matchedTextEffectPresetId(heading);
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.7,
+        minChildSize: 0.4,
+        maxChildSize: 0.95,
+        builder: (context, controller) => ListView(
+          controller: controller,
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          children: [
+            Text('Text styles', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+              'Same effect presets as ShotKit studio. Applied to the headline.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 16),
+            for (final preset in textEffectPresets)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                selected: preset.id == selectedId,
+                title: Text(preset.name),
+                subtitle: Text(preset.description),
+                trailing: preset.id == selectedId
+                    ? const Icon(Icons.check)
+                    : null,
+                onTap: () => Navigator.pop(context, preset.id),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (selected == null) return;
+    await _commit(applyTextEffectPresetToDocument(_page.document, selected));
   }
 
   Future<void> _editLayout() async {

@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/hex.dart';
 import '../../domain/document.dart';
 import '../../domain/mockups.dart';
+import '../../domain/text_effects.dart';
 
 class DesignPageView extends StatelessWidget {
   const DesignPageView({
@@ -122,7 +123,12 @@ class _BackgroundLayer extends StatelessWidget {
       if (url == null) return const ColoredBox(color: Color(0xFF0F172A));
       return Opacity(
         opacity: img.opacity,
-        child: CachedNetworkImage(imageUrl: url, fit: BoxFit.cover),
+        child: CachedNetworkImage(
+          imageUrl: url,
+          fit: BoxFit.cover,
+          fadeInDuration: Duration.zero,
+          fadeOutDuration: Duration.zero,
+        ),
       );
     }
     return const ColoredBox(color: Color(0xFF0F172A));
@@ -185,13 +191,42 @@ class _TextPaint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final effects = normalizeTextEffects(el.effects);
     final align = switch (el.align) {
       'left' => TextAlign.left,
       'right' => TextAlign.right,
       _ => TextAlign.center,
     };
-    final shadow = el.effects.shadow;
-    final enabled = shadow?['enabled'] == true;
+    final boxAlign = switch (el.align) {
+      'left' => Alignment.centerLeft,
+      'right' => Alignment.centerRight,
+      _ => Alignment.center,
+    };
+
+    final shadows = <Shadow>[];
+    final shadow = effects.shadow;
+    if (shadow?['enabled'] == true) {
+      shadows.add(
+        Shadow(
+          color: parseHexColor(shadow?['color'] as String? ?? '#000000')
+              .withValues(alpha: (shadow?['opacity'] as num?)?.toDouble() ?? 1),
+          blurRadius: (shadow?['blur'] as num?)?.toDouble() ?? 12,
+          offset: Offset(
+            (shadow?['offsetX'] as num?)?.toDouble() ?? 0,
+            (shadow?['offsetY'] as num?)?.toDouble() ?? 6,
+          ),
+        ),
+      );
+    }
+    final glow = effects.glow;
+    if (glow?['enabled'] == true) {
+      final glowColor = parseHexColor(glow?['color'] as String? ?? '#FFFFFF')
+          .withValues(alpha: (glow?['intensity'] as num?)?.toDouble() ?? 0.6);
+      final blur = (glow?['blur'] as num?)?.toDouble() ?? 12;
+      shadows.add(Shadow(color: glowColor, blurRadius: blur));
+      shadows.add(Shadow(color: glowColor, blurRadius: blur * 1.6));
+    }
+
     TextStyle style;
     try {
       style = GoogleFonts.getFont(
@@ -205,18 +240,7 @@ class _TextPaint extends StatelessWidget {
         color: parseHexColor(el.color),
         height: el.lineHeight,
         letterSpacing: el.letterSpacing,
-        shadows: enabled
-            ? [
-                Shadow(
-                  color: parseHexColor(shadow?['color'] as String? ?? '#000000'),
-                  blurRadius: (shadow?['blur'] as num?)?.toDouble() ?? 12,
-                  offset: Offset(
-                    (shadow?['offsetX'] as num?)?.toDouble() ?? 0,
-                    (shadow?['offsetY'] as num?)?.toDouble() ?? 6,
-                  ),
-                ),
-              ]
-            : null,
+        shadows: shadows.isEmpty ? null : shadows,
       );
     } catch (_) {
       style = TextStyle(
@@ -225,50 +249,137 @@ class _TextPaint extends StatelessWidget {
         fontWeight: FontWeight.w600,
         color: parseHexColor(el.color),
         height: el.lineHeight,
+        shadows: shadows.isEmpty ? null : shadows,
       );
     }
 
-    final backdrop = el.effects.backdrop;
-    final child = Text(el.content, textAlign: align, style: style);
-    if (backdrop?['enabled'] == true) {
-      return Container(
-        alignment: switch (el.align) {
-          'left' => Alignment.centerLeft,
-          'right' => Alignment.centerRight,
-          _ => Alignment.center,
-        },
-        padding: EdgeInsets.fromLTRB(
-          (backdrop?['paddingLeft'] as num?)?.toDouble() ??
-              (backdrop?['paddingX'] as num?)?.toDouble() ??
-              12,
-          (backdrop?['paddingTop'] as num?)?.toDouble() ??
-              (backdrop?['paddingY'] as num?)?.toDouble() ??
-              6,
-          (backdrop?['paddingRight'] as num?)?.toDouble() ??
-              (backdrop?['paddingX'] as num?)?.toDouble() ??
-              12,
-          (backdrop?['paddingBottom'] as num?)?.toDouble() ??
-              (backdrop?['paddingY'] as num?)?.toDouble() ??
-              6,
-        ),
-        decoration: BoxDecoration(
-          color: parseHexColor(backdrop?['color'] as String? ?? '#000000')
-              .withValues(alpha: (backdrop?['opacity'] as num?)?.toDouble() ?? 0.5),
-          borderRadius: BorderRadius.circular(
-            (backdrop?['borderRadius'] as num?)?.toDouble() ?? 8,
-          ),
-        ),
-        child: child,
+    final gradient = effects.gradientFill;
+    final gradientStops = gradient?['stops'];
+    final useGradient = gradient?['enabled'] == true &&
+        gradientStops is List &&
+        gradientStops.length >= 2;
+    if (useGradient) {
+      style = style.copyWith(color: Colors.white);
+    }
+
+    Widget label = Text(el.content, textAlign: align, style: style);
+    if (useGradient && gradient != null) {
+      final stops = [...gradientStops]
+        ..sort((a, b) {
+          final ap = (a is Map ? a['position'] as num? : 0) ?? 0;
+          final bp = (b is Map ? b['position'] as num? : 0) ?? 0;
+          return ap.compareTo(bp);
+        });
+      final angle = (gradient['angle'] as num?)?.toDouble() ?? 90;
+      label = ShaderMask(
+        blendMode: BlendMode.srcIn,
+        shaderCallback: (bounds) => LinearGradient(
+          begin: _cssGradientBegin(angle),
+          end: _cssGradientEnd(angle),
+          colors: [
+            for (final stop in stops)
+              parseHexColor(
+                stop is Map ? stop['color'] as String? ?? '#FFFFFF' : '#FFFFFF',
+              ),
+          ],
+          stops: [
+            for (final stop in stops)
+              ((stop is Map ? stop['position'] as num? : 0) ?? 0)
+                  .toDouble()
+                  .clamp(0.0, 1.0),
+          ],
+        ).createShader(bounds),
+        child: label,
       );
     }
-    return Align(
-      alignment: switch (el.align) {
-        'left' => Alignment.centerLeft,
-        'right' => Alignment.centerRight,
-        _ => Alignment.center,
-      },
-      child: child,
-    );
+
+    final stroke = effects.stroke;
+    if (stroke?['enabled'] == true) {
+      final width = (stroke?['width'] as num?)?.toDouble() ?? 2;
+      final strokeStyle = style.copyWith(
+        shadows: null,
+        foreground: Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = width * 2
+          ..color = parseHexColor(stroke?['color'] as String? ?? '#000000'),
+      );
+      label = Stack(
+        alignment: boxAlign,
+        children: [
+          Text(el.content, textAlign: align, style: strokeStyle),
+          label,
+        ],
+      );
+    }
+
+    final underline = effects.underline;
+    if (underline?['enabled'] == true) {
+      final thickness = math.max(
+        4.0,
+        el.fontSize * ((underline?['thickness'] as num?)?.toDouble() ?? 0.3),
+      );
+      final offset = ((underline?['offset'] as num?)?.toDouble() ?? 0.1) * el.fontSize;
+      label = Stack(
+        alignment: boxAlign,
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: -offset,
+            child: FractionallySizedBox(
+              widthFactor: 0.92,
+              child: Container(
+                height: thickness,
+                decoration: BoxDecoration(
+                  color: parseHexColor(underline?['color'] as String? ?? '#FACC15')
+                      .withValues(
+                    alpha: (underline?['opacity'] as num?)?.toDouble() ?? 0.85,
+                  ),
+                  borderRadius: BorderRadius.circular(
+                    underline?['rounded'] == true ? 999 : 2,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          label,
+        ],
+      );
+    }
+
+    final backdrop = effects.backdrop;
+    if (backdrop?['enabled'] == true) {
+      final radius = backdrop?['style'] == 'rounded'
+          ? 999.0
+          : ((backdrop?['borderRadius'] as num?)?.toDouble() ?? 8);
+      return Align(
+        alignment: boxAlign,
+        child: Container(
+          padding: EdgeInsets.fromLTRB(
+            (backdrop?['paddingLeft'] as num?)?.toDouble() ??
+                (backdrop?['paddingX'] as num?)?.toDouble() ??
+                12,
+            (backdrop?['paddingTop'] as num?)?.toDouble() ??
+                (backdrop?['paddingY'] as num?)?.toDouble() ??
+                6,
+            (backdrop?['paddingRight'] as num?)?.toDouble() ??
+                (backdrop?['paddingX'] as num?)?.toDouble() ??
+                12,
+            (backdrop?['paddingBottom'] as num?)?.toDouble() ??
+                (backdrop?['paddingY'] as num?)?.toDouble() ??
+                6,
+          ),
+          decoration: BoxDecoration(
+            color: parseHexColor(backdrop?['color'] as String? ?? '#000000')
+                .withValues(alpha: (backdrop?['opacity'] as num?)?.toDouble() ?? 0.5),
+            borderRadius: BorderRadius.circular(radius),
+          ),
+          child: label,
+        ),
+      );
+    }
+    return Align(alignment: boxAlign, child: label);
   }
 }
 
@@ -315,6 +426,8 @@ class _AssetImage extends StatelessWidget {
       borderRadius: BorderRadius.circular(radius),
       child: CachedNetworkImage(
         imageUrl: url!,
+        fadeInDuration: Duration.zero,
+        fadeOutDuration: Duration.zero,
         fit: switch (fit) {
           'contain' => BoxFit.contain,
           'fill' => BoxFit.fill,
@@ -388,6 +501,8 @@ class _MockupPaint extends StatelessWidget {
                     ? const ColoredBox(color: Color(0xFF111827))
                     : CachedNetworkImage(
                         imageUrl: url!,
+                        fadeInDuration: Duration.zero,
+                        fadeOutDuration: Duration.zero,
                         fit: switch (element.fitMode) {
                           'contain' => BoxFit.contain,
                           'stretch' => BoxFit.fill,

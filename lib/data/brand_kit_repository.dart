@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -145,12 +144,13 @@ class BrandKitRepository {
 
   Future<Result<void>> uploadLogo({
     required String brandKitId,
-    required File file,
+    required List<int> bytes,
+    required String fileName,
     required String variant,
   }) async {
     final assetId = _uuid.v4();
-    final fileName = p.basename(file.path).replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
-    final bytes = await file.readAsBytes();
+    fileName = p.basename(fileName).replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
+    final data = bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
     final path = brandLogoPath(
       userId: _uid,
       brandKitId: brandKitId,
@@ -166,10 +166,10 @@ class BrandKitRepository {
     try {
       await _client.storage.from(storageBucket).uploadBinary(
             path,
-            bytes,
+            data,
             fileOptions: FileOptions(contentType: mime, upsert: false),
           );
-      final size = await _decodeSize(bytes);
+      final size = await _decodeSize(data);
       await _client.from('assets').insert({
         'id': assetId,
         'user_id': _uid,
@@ -178,7 +178,7 @@ class BrandKitRepository {
         'storage_path': path,
         'file_name': fileName,
         'mime_type': mime,
-        'file_size': bytes.length,
+        'file_size': data.length,
         'width': size.$1,
         'height': size.$2,
       });

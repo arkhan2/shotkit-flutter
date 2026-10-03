@@ -6,6 +6,8 @@ import '../../core/validators.dart';
 import '../../data/providers.dart';
 import '../../domain/brand.dart';
 import '../../shared/widgets.dart';
+import '../legal/legal_screen.dart';
+import 'google_continue_button.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -50,17 +52,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         _error = message;
       }),
     );
-  }
-
-  Future<void> _google() async {
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    final result = await ref.read(authRepositoryProvider).signInWithGoogle();
-    if (!mounted) return;
-    setState(() => _busy = false);
-    result.when(ok: (_) {}, err: (message) => setState(() => _error = message));
   }
 
   @override
@@ -108,15 +99,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               child: Text(_busy ? 'Signing in…' : 'Sign in'),
             ),
             const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: _busy ? null : _google,
-              child: const Text('Continue with Google'),
+            GoogleContinueButton(
+              busy: _busy,
+              onSignedIn: () => context.go('/app'),
+              onError: (message) => setState(() => _error = message),
             ),
             const SizedBox(height: 24),
             TextButton(
               onPressed: () => context.go('/signup'),
               child: const Text('Create an account'),
             ),
+            const SizedBox(height: 8),
+            const LegalLinks(),
           ],
         ),
       ),
