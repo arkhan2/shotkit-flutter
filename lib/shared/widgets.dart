@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../domain/brand.dart';
 
@@ -9,10 +8,49 @@ class BrandMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SvgPicture.asset(
-      AppBrand.logoMarkAsset,
+    final scale = size / AppBrand.markViewBox;
+    final stroke = (AppBrand.markStrokeWidth * scale).clamp(1.0, 2.5);
+    return SizedBox(
       width: size,
       height: size,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          _MarkFrame(rect: AppBrand.markBack, scale: scale, fill: AppBrand.ink, stroke: stroke),
+          _MarkFrame(rect: AppBrand.markFront, scale: scale, fill: AppBrand.sky, stroke: stroke),
+        ],
+      ),
+    );
+  }
+}
+
+class _MarkFrame extends StatelessWidget {
+  const _MarkFrame({
+    required this.rect,
+    required this.scale,
+    required this.fill,
+    required this.stroke,
+  });
+
+  final Rect rect;
+  final double scale;
+  final Color fill;
+  final double stroke;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      left: rect.left * scale,
+      top: rect.top * scale,
+      width: rect.width * scale,
+      height: rect.height * scale,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: fill,
+          borderRadius: BorderRadius.circular(AppBrand.markRadius * scale),
+          border: Border.all(color: AppBrand.slate, width: stroke),
+        ),
+      ),
     );
   }
 }

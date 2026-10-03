@@ -98,13 +98,14 @@ class _BackgroundLayer extends StatelessWidget {
     }
     if (background is GradientBackground) {
       final g = background as GradientBackground;
+      final ordered = [...g.stops]..sort((a, b) => a.position.compareTo(b.position));
       return DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: _fromAngle(g.angle),
-            end: _fromAngle(g.angle + 180),
-            colors: g.stops.map((s) => parseHexColor(s.color)).toList(),
-            stops: g.stops.map((s) => s.position.clamp(0.0, 1.0)).toList(),
+            begin: _cssGradientBegin(g.angle),
+            end: _cssGradientEnd(g.angle),
+            colors: ordered.map((s) => parseHexColor(s.color)).toList(),
+            stops: ordered.map((s) => s.position.clamp(0.0, 1.0)).toList(),
           ),
         ),
       );
@@ -128,9 +129,15 @@ class _BackgroundLayer extends StatelessWidget {
   }
 }
 
-Alignment _fromAngle(double degrees) {
+/// CSS `linear-gradient(θdeg)`: 0° is up, 90° is right, Y increases downward.
+Alignment _cssGradientEnd(double degrees) {
   final rad = degrees * math.pi / 180;
-  return Alignment(math.cos(rad), math.sin(rad));
+  return Alignment(math.sin(rad), -math.cos(rad));
+}
+
+Alignment _cssGradientBegin(double degrees) {
+  final rad = degrees * math.pi / 180;
+  return Alignment(-math.sin(rad), math.cos(rad));
 }
 
 class _ElementLayer extends StatelessWidget {

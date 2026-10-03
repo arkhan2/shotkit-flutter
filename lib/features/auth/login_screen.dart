@@ -70,7 +70,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
           children: [
-            const BrandMark(size: 56),
+            const BrandMark(size: 64),
             const SizedBox(height: 20),
             Text(AppBrand.name, style: Theme.of(context).textTheme.displaySmall),
             const SizedBox(height: 8),

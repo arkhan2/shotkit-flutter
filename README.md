@@ -2,6 +2,9 @@
 
 Flutter companion for the ShotKit web studio. Create App Store and Google Play screenshot sets on a phone. Same accounts, projects, Brand Kits, and designs as the web app.
 
+Repo: [arkhan2/shotkit-flutter](https://github.com/arkhan2/shotkit-flutter)  
+Web preview (GitHub Pages): https://arkhan2.github.io/shotkit-flutter/
+
 > Not a Canva clone — and not a port of the desktop editor. v1 is a guided composer.
 
 ## Stack

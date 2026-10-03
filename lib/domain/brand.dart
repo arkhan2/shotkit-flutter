@@ -18,4 +18,11 @@ class AppBrand {
   static const appIconAsset = 'assets/brand/app-icon.svg';
 
   static const authRedirect = 'io.shotkit.app://login-callback';
+
+  /// Same geometry as ShotKit web `SHOTKIT_LOGO_MARK` (viewBox 64×64).
+  static const markViewBox = 64.0;
+  static const markStrokeWidth = 1.25;
+  static const markBack = Rect.fromLTWH(8.75, 10.75, 30.5, 42.5);
+  static const markFront = Rect.fromLTWH(24.75, 10.75, 30.5, 42.5);
+  static const markRadius = 8.25;
 }
